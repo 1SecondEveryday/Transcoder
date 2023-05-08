@@ -1,7 +1,10 @@
 plugins {
     id("com.android.library")
     id("kotlin-android")
+    id("maven-publish")
 }
+
+group = "com.otaliastudios.transcoder"
 
 android {
     setCompileSdkVersion(property("compileSdkVersion") as Int)
