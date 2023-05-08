@@ -1,9 +1,8 @@
 plugins {
     id("com.android.library")
     id("kotlin-android")
+    id("maven-publish")
 }
-
-group = "com.otaliastudios.transcoder"
 
 android {
     setCompileSdkVersion(property("compileSdkVersion") as Int)
@@ -12,7 +11,12 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     namespace = "com.otaliastudios.transcoder"
-    buildTypes["release"].isMinifyEnabled = false
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -33,4 +37,12 @@ dependencies {
     androidTestImplementation("androidx.test:rules:1.5.0")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("org.mockito:mockito-android:2.28.2")
+}
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.otaliastudios.transcoder"
+            artifactId = "transcoder"
+        }
+    }
 }
