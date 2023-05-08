@@ -5,6 +5,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 
 import com.otaliastudios.transcoder.common.TrackStatus;
+import com.otaliastudios.transcoder.common.VideoScale;
 import com.otaliastudios.transcoder.internal.utils.BitRates;
 import com.otaliastudios.transcoder.resize.AspectRatioResizer;
 import com.otaliastudios.transcoder.resize.AtMostResizer;
@@ -47,6 +48,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private int targetFrameRate;
         private float targetKeyFrameInterval;
         private String targetMimeType;
+        private VideoScale targetVideoScale;
     }
 
     /**
@@ -122,6 +124,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         private long targetBitRate = BITRATE_UNKNOWN;
         private float targetKeyFrameInterval = DEFAULT_KEY_FRAME_INTERVAL;
         private String targetMimeType = MediaFormatConstants.MIMETYPE_VIDEO_AVC;
+        private VideoScale targetVideoScale = VideoScale.Default;
 
         @SuppressWarnings("unused")
         public Builder() { }
@@ -189,6 +192,12 @@ public class DefaultVideoStrategy implements TrackStrategy {
         }
 
         @NonNull
+        public Builder videoScale(@NonNull VideoScale scaleType) {
+            this.targetVideoScale = scaleType;
+            return this;
+        }
+
+        @NonNull
         @SuppressWarnings("WeakerAccess")
         public Options options() {
             Options options = new Options();
@@ -197,6 +206,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
             options.targetBitRate = targetBitRate;
             options.targetKeyFrameInterval = targetKeyFrameInterval;
             options.targetMimeType = targetMimeType;
+            options.targetVideoScale = targetVideoScale;
             return options;
         }
 
@@ -276,6 +286,7 @@ public class DefaultVideoStrategy implements TrackStrategy {
         outputFormat.setInteger(MediaFormat.KEY_HEIGHT, outHeight);
         outputFormat.setInteger(MediaFormatConstants.KEY_ROTATION_DEGREES, 0);
         outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, outFrameRate);
+        outputFormat.setString(MediaFormatConstants.KEY_VIDEO_SCALE_TYPE, options.targetVideoScale.toString());
         if (Build.VERSION.SDK_INT >= 25) {
             outputFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, options.targetKeyFrameInterval);
         } else {
