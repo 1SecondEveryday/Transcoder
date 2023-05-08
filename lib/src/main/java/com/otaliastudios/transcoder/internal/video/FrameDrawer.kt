@@ -1,11 +1,13 @@
 package com.otaliastudios.transcoder.internal.video
 
 import android.graphics.SurfaceTexture
-import android.graphics.SurfaceTexture.OnFrameAvailableListener
-import android.opengl.Matrix
 import android.view.Surface
 import androidx.annotation.GuardedBy
 import com.otaliastudios.opengl.draw.GlRect
+import com.otaliastudios.opengl.extensions.clear
+import com.otaliastudios.opengl.extensions.rotateZ
+import com.otaliastudios.opengl.extensions.scale
+import com.otaliastudios.opengl.extensions.translate
 import com.otaliastudios.opengl.program.GlTextureProgram
 import com.otaliastudios.opengl.texture.GlTexture
 import com.otaliastudios.transcoder.internal.utils.Logger
@@ -52,14 +54,14 @@ internal class FrameDrawer() {
         val texture = GlTexture()
         textureProgram = GlTextureProgram()
         textureProgram!!.texture = texture
-        this.textureRect = GlRect()
+        textureRect = GlRect()
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
         // still need to keep a reference to it.  The Surface doesn't retain a reference
         // at the Java level, so if we don't either then the object can get GCed, which
         // causes the native finalizer to run.
         surfaceTexture = SurfaceTexture(texture.id)
-        surfaceTexture!!.setOnFrameAvailableListener(OnFrameAvailableListener {
+        surfaceTexture!!.setOnFrameAvailableListener {
             LOG.v("New frame available")
             synchronized(frameAvailableLock) {
                 if (frameAvailable) {
@@ -68,7 +70,7 @@ internal class FrameDrawer() {
                 frameAvailable = true
                 frameAvailableLock.notifyAll()
             }
-        })
+        }
         surface = Surface(surfaceTexture)
     }
 
@@ -151,25 +153,35 @@ internal class FrameDrawer() {
      */
     private fun drawNewFrame() {
         surfaceTexture!!.getTransformMatrix(textureProgram!!.textureTransform)
-        // Invert the scale.
-        val glScaleX = 1f / scaleX
-        val glScaleY = 1f / scaleY
-        // Compensate before scaling.
-        val glTranslX = (1f - glScaleX) / 2f
-        val glTranslY = (1f - glScaleY) / 2f
-        Matrix.translateM(textureProgram!!.textureTransform, 0, glTranslX, glTranslY, 0f)
-        // Scale.
-        Matrix.scaleM(textureProgram!!.textureTransform, 0, glScaleX, glScaleY, 1f)
-        // Apply rotation and flip.
-        Matrix.translateM(textureProgram!!.textureTransform, 0, 0.5f, 0.5f, 0f)
-        Matrix.rotateM(textureProgram!!.textureTransform, 0, rotation.toFloat(), 0f, 0f, 1f)
-        if (flipY) {
-            Matrix.scaleM(textureProgram!!.textureTransform, 0, 1f, -1f, 1f)
-        }
-        Matrix.translateM(textureProgram!!.textureTransform, 0, -0.5f, -0.5f, 0f)
 
-        // Draw.
-        textureProgram!!.draw((textureRect)!!)
+        // If we are not scaling we must move the texture down
+        val translateY = if (scaleY == 1f) -1f else 0f
+
+        // We must invert the rotation.
+        val invertedRotation = rotation.toFloat() * -1f
+
+        textureRect!!.modelMatrix.apply {
+            clear()
+
+            // Move the texture (frame).
+            translate(x = 0f, y = translateY)
+
+            // Scale the texture (frame).
+            scale(x = scaleX, y = scaleY)
+
+            // Apply rotation and flip.
+            translate(x = 0.5f, y = 0.5f)
+            rotateZ(angle = invertedRotation)
+            if (flipY) {
+                scale(x = 1f, y = -1f, z = 1f)
+            }
+
+            // Move the texture back
+            translate(x = -0.5f, y = -0.5f)
+        }
+
+        // Draw the texture (frame).
+        textureProgram!!.draw(textureRect!!)
     }
 
     companion object {
