@@ -23,6 +23,7 @@ android {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     api("com.otaliastudios.opengl:egloo:0.6.1")
     api("androidx.annotation:annotation:1.6.0")
 
