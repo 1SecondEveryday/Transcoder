@@ -369,6 +369,34 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
             </RadioGroup>
+            <!-- REPLACE AUDIO -->
+            <TextView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Video Crop" />
+            <RadioGroup
+                android:id="@+id/video_scale"
+                android:checkedButton="@id/video_scale_crop"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/video_scale_crop"
+                    android:text="Center Crop"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/video_scale_fit"
+                    android:text="Fit"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </RadioGroup>
             <TextView
                 android:id="@+id/replace_info"
                 android:text="No replacement selected."
