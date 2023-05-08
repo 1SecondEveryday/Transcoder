@@ -28,8 +28,11 @@ import com.otaliastudios.transcoder.time.SpeedTimeInterpolator
 import com.otaliastudios.transcoder.time.TimeInterpolator
 import com.otaliastudios.transcoder.validator.DefaultValidator
 import com.otaliastudios.transcoder.validator.Validator
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.FileDescriptor
 import java.util.concurrent.Future
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Collects transcoding options consumed by [Transcoder].
@@ -254,6 +257,36 @@ data class TranscoderOptions private constructor(
 
         fun transcode(): Future<Void> {
             return instance.transcode(build())
+        }
+
+        suspend fun transcode(
+            onCancelled: () -> Unit = {},
+            onProgress: (Double) -> Unit,
+        ): Int {
+            return suspendCancellableCoroutine { continuation ->
+                val listener = object : TranscoderListener {
+                    override fun onTranscodeProgress(progress: Double) {
+                        onProgress(progress.coerceIn(0.0, 1.0))
+                    }
+
+                    override fun onTranscodeCompleted(successCode: Int) {
+                        continuation.resume(successCode)
+                    }
+
+                    override fun onTranscodeCanceled() {
+                        onCancelled()
+                    }
+
+                    override fun onTranscodeFailed(exception: Throwable) {
+                        continuation.resumeWithException(exception)
+                    }
+                }
+
+                this.listener = listener
+                val future = transcode()
+                continuation.invokeOnCancellation { future.cancel(true) }
+            }
+
         }
 
         companion object {
