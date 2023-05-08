@@ -25,7 +25,7 @@ import com.otaliastudios.transcoder.internal.utils.Logger
  */
 internal class FrameDrawer() {
 
-    private var mSurfaceTexture: SurfaceTexture?
+    private var surfaceTexture: SurfaceTexture?
 
     /**
      * Returns a Surface to draw onto.
@@ -33,16 +33,16 @@ internal class FrameDrawer() {
      */
     var surface: Surface?
         private set
-    private var mProgram: GlTextureProgram?
-    private var mDrawable: GlRect?
-    private var mScaleX = 1f
-    private var mScaleY = 1f
-    private var mRotation = 0
-    private var mFlipY = false
+    private var textureProgram: GlTextureProgram?
+    private var textureRect: GlRect?
+    private var scaleX = 1f
+    private var scaleY = 1f
+    private var rotation = 0
+    private var flipY = false
 
-    @GuardedBy("mFrameAvailableLock")
-    private var mFrameAvailable = false
-    private val mFrameAvailableLock = Object()
+    @GuardedBy("frameAvailableLock")
+    private var frameAvailable = false
+    private val frameAvailableLock = Object()
 
     /**
      * Creates an VideoDecoderOutput using the current EGL context (rather than establishing a
@@ -50,26 +50,26 @@ internal class FrameDrawer() {
      */
     init {
         val texture = GlTexture()
-        mProgram = GlTextureProgram()
-        mProgram!!.texture = texture
-        mDrawable = GlRect()
+        textureProgram = GlTextureProgram()
+        textureProgram!!.texture = texture
+        this.textureRect = GlRect()
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
         // still need to keep a reference to it.  The Surface doesn't retain a reference
         // at the Java level, so if we don't either then the object can get GCed, which
         // causes the native finalizer to run.
-        mSurfaceTexture = SurfaceTexture(texture.id)
-        mSurfaceTexture!!.setOnFrameAvailableListener(OnFrameAvailableListener {
+        surfaceTexture = SurfaceTexture(texture.id)
+        surfaceTexture!!.setOnFrameAvailableListener(OnFrameAvailableListener {
             LOG.v("New frame available")
-            synchronized(mFrameAvailableLock) {
-                if (mFrameAvailable) {
+            synchronized(frameAvailableLock) {
+                if (frameAvailable) {
                     throw RuntimeException("mFrameAvailable already set, frame could be dropped")
                 }
-                mFrameAvailable = true
-                mFrameAvailableLock.notifyAll()
+                frameAvailable = true
+                frameAvailableLock.notifyAll()
             }
         })
-        surface = Surface(mSurfaceTexture)
+        surface = Surface(surfaceTexture)
     }
 
     /**
@@ -78,8 +78,8 @@ internal class FrameDrawer() {
      * @param scaleY y scale
      */
     fun setScale(scaleX: Float, scaleY: Float) {
-        mScaleX = scaleX
-        mScaleY = scaleY
+        this.scaleX = scaleX
+        this.scaleY = scaleY
     }
 
     /**
@@ -88,26 +88,26 @@ internal class FrameDrawer() {
      * @param rotation rotation
      */
     fun setRotation(rotation: Int) {
-        mRotation = rotation
+        this.rotation = rotation
     }
 
     fun setFlipY(flipY: Boolean) {
-        mFlipY = flipY
+        this.flipY = flipY
     }
 
     /**
      * Discard all resources held by this class, notably the EGL context.
      */
     fun release() {
-        mProgram!!.release()
+        textureProgram!!.release()
         surface!!.release()
         // this causes a bunch of warnings that appear harmless but might confuse someone:
         // W BufferQueue: [unnamed-3997-2] cancelBuffer: BufferQueue has been abandoned!
         // mSurfaceTexture.release();
         surface = null
-        mSurfaceTexture = null
-        mDrawable = null
-        mProgram = null
+        surfaceTexture = null
+        textureRect = null
+        textureProgram = null
     }
 
     /**
@@ -125,13 +125,13 @@ internal class FrameDrawer() {
      * data is available.
      */
     private fun awaitNewFrame() {
-        synchronized(mFrameAvailableLock) {
-            while (!mFrameAvailable) {
+        synchronized(frameAvailableLock) {
+            while (!frameAvailable) {
                 try {
                     // Wait for onFrameAvailable() to signal us. Use a timeout to avoid
                     // stalling the test if it doesn't arrive.
-                    mFrameAvailableLock.wait(NEW_IMAGE_TIMEOUT_MILLIS)
-                    if (!mFrameAvailable) {
+                    frameAvailableLock.wait(NEW_IMAGE_TIMEOUT_MILLIS)
+                    if (!frameAvailable) {
                         // TODO: if "spurious wakeup", continue while loop
                         // TODO: what does this mean? ^
                         throw RuntimeException("Surface frame wait timed out")
@@ -140,41 +140,41 @@ internal class FrameDrawer() {
                     throw RuntimeException(ie)
                 }
             }
-            mFrameAvailable = false
+            frameAvailable = false
         }
         // Latch the data.
-        mSurfaceTexture!!.updateTexImage()
+        surfaceTexture!!.updateTexImage()
     }
 
     /**
      * Draws the data from SurfaceTexture onto the current EGL surface.
      */
     private fun drawNewFrame() {
-        mSurfaceTexture!!.getTransformMatrix(mProgram!!.textureTransform)
+        surfaceTexture!!.getTransformMatrix(textureProgram!!.textureTransform)
         // Invert the scale.
-        val glScaleX = 1f / mScaleX
-        val glScaleY = 1f / mScaleY
+        val glScaleX = 1f / scaleX
+        val glScaleY = 1f / scaleY
         // Compensate before scaling.
         val glTranslX = (1f - glScaleX) / 2f
         val glTranslY = (1f - glScaleY) / 2f
-        Matrix.translateM(mProgram!!.textureTransform, 0, glTranslX, glTranslY, 0f)
+        Matrix.translateM(textureProgram!!.textureTransform, 0, glTranslX, glTranslY, 0f)
         // Scale.
-        Matrix.scaleM(mProgram!!.textureTransform, 0, glScaleX, glScaleY, 1f)
+        Matrix.scaleM(textureProgram!!.textureTransform, 0, glScaleX, glScaleY, 1f)
         // Apply rotation and flip.
-        Matrix.translateM(mProgram!!.textureTransform, 0, 0.5f, 0.5f, 0f)
-        Matrix.rotateM(mProgram!!.textureTransform, 0, mRotation.toFloat(), 0f, 0f, 1f)
-        if (mFlipY) {
-            Matrix.scaleM(mProgram!!.textureTransform, 0, 1f, -1f, 1f)
+        Matrix.translateM(textureProgram!!.textureTransform, 0, 0.5f, 0.5f, 0f)
+        Matrix.rotateM(textureProgram!!.textureTransform, 0, rotation.toFloat(), 0f, 0f, 1f)
+        if (flipY) {
+            Matrix.scaleM(textureProgram!!.textureTransform, 0, 1f, -1f, 1f)
         }
-        Matrix.translateM(mProgram!!.textureTransform, 0, -0.5f, -0.5f, 0f)
+        Matrix.translateM(textureProgram!!.textureTransform, 0, -0.5f, -0.5f, 0f)
 
         // Draw.
-        mProgram!!.draw((mDrawable)!!)
+        textureProgram!!.draw((textureRect)!!)
     }
 
     companion object {
 
         private val LOG = Logger("FrameDrawer")
-        private val NEW_IMAGE_TIMEOUT_MILLIS: Long = 10000
+        private const val NEW_IMAGE_TIMEOUT_MILLIS: Long = 10000
     }
 }
