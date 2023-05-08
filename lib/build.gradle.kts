@@ -40,9 +40,13 @@ dependencies {
 }
 publishing {
     publications {
-        create<MavenPublication>("maven") {
+        register<MavenPublication>("release") {
             groupId = "com.otaliastudios.transcoder"
             artifactId = "transcoder"
+
+            afterEvaluate {
+                from(components["release"])
+            }
         }
     }
 }
