@@ -67,6 +67,13 @@ class Transcoder private constructor() {
             return TranscoderOptions.Builder(outPath)
         }
 
+        fun into(
+            outPath: String,
+            block: TranscoderOptions.Builder.() -> Unit,
+        ): TranscoderOptions.Builder {
+            return TranscoderOptions.Builder(outPath).apply(block)
+        }
+
         /**
          * Starts building transcoder options.
          * Requires a non null fileDescriptor to the output file or stream
@@ -79,6 +86,14 @@ class Transcoder private constructor() {
             return TranscoderOptions.Builder(fileDescriptor)
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        fun into(
+            fileDescriptor: FileDescriptor,
+            block: TranscoderOptions.Builder.() -> Unit,
+        ): TranscoderOptions.Builder {
+            return TranscoderOptions.Builder(fileDescriptor).apply(block)
+        }
+
         /**
          * Starts building transcoder options.
          * Requires a non null sink.
@@ -88,6 +103,13 @@ class Transcoder private constructor() {
          */
         fun into(dataSink: DataSink): TranscoderOptions.Builder {
             return TranscoderOptions.Builder(dataSink)
+        }
+
+        fun into(
+            dataSink: DataSink,
+            block: TranscoderOptions.Builder.() -> Unit,
+        ): TranscoderOptions.Builder {
+            return TranscoderOptions.Builder(dataSink).apply(block)
         }
     }
 }
