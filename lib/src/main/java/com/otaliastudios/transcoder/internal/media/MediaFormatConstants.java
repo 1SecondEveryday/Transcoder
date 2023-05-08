@@ -54,5 +54,7 @@ public class MediaFormatConstants {
     public static final String MIMETYPE_AUDIO_AAC = "audio/mp4a-latm";
     public static final String MIMETYPE_AUDIO_RAW = "audio/raw";
 
+    public static final String KEY_VIDEO_SCALE_TYPE = "video-scale-type";
+
     private MediaFormatConstants() { }
 }

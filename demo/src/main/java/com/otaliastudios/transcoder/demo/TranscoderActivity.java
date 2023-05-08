@@ -20,6 +20,7 @@ import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.TranscoderOptions;
 import com.otaliastudios.transcoder.common.TrackStatus;
 import com.otaliastudios.transcoder.common.TrackType;
+import com.otaliastudios.transcoder.common.VideoScale;
 import com.otaliastudios.transcoder.internal.utils.Logger;
 import com.otaliastudios.transcoder.source.DataSource;
 import com.otaliastudios.transcoder.source.TrimDataSource;
@@ -64,6 +65,7 @@ public class TranscoderActivity extends AppCompatActivity implements
     private RadioGroup mVideoRotationGroup;
     private RadioGroup mSpeedGroup;
     private RadioGroup mAudioReplaceGroup;
+    private RadioGroup mVideoScaleGroup;
 
     private ProgressBar mProgressView;
     private TextView mButtonView;
@@ -133,6 +135,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mSpeedGroup = findViewById(R.id.speed);
         mAudioSampleRateGroup = findViewById(R.id.sampleRate);
         mAudioReplaceGroup = findViewById(R.id.replace);
+        mVideoScaleGroup = findViewById(R.id.video_scale);
 
         mAudioChannelsGroup.setOnCheckedChangeListener(mRadioGroupListener);
         mVideoFramesGroup.setOnCheckedChangeListener(mRadioGroupListener);
@@ -141,6 +144,7 @@ public class TranscoderActivity extends AppCompatActivity implements
         mAudioSampleRateGroup.setOnCheckedChangeListener(mRadioGroupListener);
         mTrimStartView.addTextChangedListener(mTextListener);
         mTrimEndView.addTextChangedListener(mTextListener);
+        mVideoScaleGroup.setOnCheckedChangeListener(mRadioGroupListener);
         syncParameters();
 
         mAudioReplaceGroup.setOnCheckedChangeListener((group, checkedId) -> {
@@ -206,10 +210,18 @@ public class TranscoderActivity extends AppCompatActivity implements
             case R.id.aspect_square: aspectRatio = 1F; break;
             default: aspectRatio = 0F;
         }
+        VideoScale videoScale;
+        switch (mVideoScaleGroup.getCheckedRadioButtonId()) {
+            case R.id.video_scale_crop: videoScale = VideoScale.CenterCrop.INSTANCE; break;
+            case R.id.video_scale_fit: videoScale = VideoScale.Fit.INSTANCE; break;
+            default: videoScale = VideoScale.Default;
+        }
+
         mTranscodeVideoStrategy = new DefaultVideoStrategy.Builder()
                 .addResizer(aspectRatio > 0 ? new AspectRatioResizer(aspectRatio) : new PassThroughResizer())
                 .addResizer(new FractionResizer(fraction))
                 .frameRate(frames)
+                .videoScale(videoScale)
                 // .keyFrameInterval(4F)
                 .build();
 
