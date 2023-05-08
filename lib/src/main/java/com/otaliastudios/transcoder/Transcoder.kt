@@ -38,6 +38,16 @@ class Transcoder private constructor() {
         }
     }
 
+    sealed interface Status {
+
+        sealed interface Finished : Status
+
+        data class Progress(val progress: Double) : Status
+        object Cancelled : Status, Finished
+        data class Completed(val successCode: Int) : Status, Finished
+        data class Failed(val exception: Throwable) : Status, Finished
+    }
+
     companion object {
 
         /**
