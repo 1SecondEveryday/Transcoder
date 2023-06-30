@@ -39,6 +39,7 @@ internal class FrameDrawer() {
     private var textureRect: GlRect?
     private var scaleX = 1f
     private var scaleY = 1f
+    private var translateY: Float = 0f
     private var rotation = 0
     private var flipY = false
 
@@ -79,9 +80,14 @@ internal class FrameDrawer() {
      * @param scaleX x scale
      * @param scaleY y scale
      */
-    fun setScale(scaleX: Float, scaleY: Float) {
+    fun setScale(
+        scaleX: Float,
+        scaleY: Float,
+        translateY: Float,
+    ) {
         this.scaleX = scaleX
         this.scaleY = scaleY
+        this.translateY = translateY
     }
 
     /**
@@ -153,9 +159,6 @@ internal class FrameDrawer() {
      */
     private fun drawNewFrame() {
         surfaceTexture!!.getTransformMatrix(textureProgram!!.textureTransform)
-
-        // If we are not scaling we must move the texture down
-        val translateY = if (scaleY == 1f) -1f else 0f
 
         // We must invert the rotation.
         val invertedRotation = rotation.toFloat() * -1f

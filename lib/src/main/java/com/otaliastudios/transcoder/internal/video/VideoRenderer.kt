@@ -1,7 +1,9 @@
 package com.otaliastudios.transcoder.internal.video
 
 import android.media.MediaFormat
-import android.media.MediaFormat.*
+import android.media.MediaFormat.KEY_FRAME_RATE
+import android.media.MediaFormat.KEY_HEIGHT
+import android.media.MediaFormat.KEY_WIDTH
 import android.view.Surface
 import com.otaliastudios.transcoder.common.VideoScale
 import com.otaliastudios.transcoder.common.videoScale
@@ -18,8 +20,8 @@ internal class VideoRenderer(
     private val sourceRotation: Int, // intrinsic source rotation
     private val extraRotation: Int, // any extra rotation in TranscoderOptions
     private val targetFormat: MediaFormat,
-    flipY: Boolean = false
-): Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
+    flipY: Boolean = false,
+) : Step<DecoderData, DecoderChannel, Long, Channel>, DecoderChannel {
 
     private val log = Logger("VideoRenderer")
 
@@ -86,7 +88,9 @@ internal class VideoRenderer(
         val scaleX = (sourceWidth * aspectRatio) / targetWidth
         val scaleY = (sourceHeight * aspectRatio) / targetHeight
 
-        frameDrawer.setScale(scaleX, scaleY)
+        val translateY = if (scaleY != 1f) 0f
+        else if (flip) -1f else 0f
+        frameDrawer.setScale(scaleX, scaleY, translateY)
 
         // Create the frame dropper, now that we know the source FPS and the target FPS.
         frameDropper = FrameDropper(
